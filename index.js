@@ -1,5 +1,8 @@
+const {config} = require('dotenv');
 const express = require('express')
 const pg = require('pg')
+
+config();
 
 const app = express()
 // configs come from standard PostgreSQL env vars
