@@ -11,9 +11,32 @@ app.use(cookieParser());
 // https://www.postgresql.org/docs/9.6/static/libpq-envars.html
 const pool = new pg.Pool();
 
+//tokens used to handle requests
+// let tokens = 2;
+
+//Add one token to use for request after five seconds
+// setInterval(() => {
+//   if (tokens < 5) {
+//     tokens++;
+//   }
+//   console.log(tokens);
+// }, 10000);
+
 /**
- * Rate limiter for home route
- * @param {*} req
+ * Returns whether or not we have reached limit
+ */
+// const isLimit = () => {
+//   if (tokens > 0) {
+//     tokens--;
+//     return true;
+//   } else {
+//     return false;
+//   }
+// };
+
+/**
+ * Rate-limiter for home page
+ * @param {} req
  * @param {*} res
  */
 const rateLimit = (req, res) => {
@@ -37,7 +60,6 @@ const rateLimit = (req, res) => {
  * @param {*} next
  */
 const queryHandler = (req, res, next) => {
-  //Adds cookie to client
   if (!req.cookies.rate) {
     pool
       .query(req.sqlQuery)
@@ -46,7 +68,6 @@ const queryHandler = (req, res, next) => {
       })
       .catch(next);
   } else {
-    //Decrements request count from client
     if (req.cookies.rate > 0) {
       pool
         .query(req.sqlQuery)
@@ -56,8 +77,6 @@ const queryHandler = (req, res, next) => {
             .json(r.rows || []);
         })
         .catch(next);
-
-      //handles request limit reached
     } else {
       res.send("Request limit reached!!");
     }
