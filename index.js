@@ -9,6 +9,22 @@ const app = express()
 // https://www.postgresql.org/docs/9.6/static/libpq-envars.html
 const pool = new pg.Pool()
 
+let tokens = 2;
+
+/**
+ * Returns whether or not we have reached limit
+ */
+const isLimit = () => {
+  
+  if (tokens > 0){
+    tokens --;
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
 const queryHandler = (req, res, next) => {
   pool.query(req.sqlQuery).then((r) => {
     return res.json(r.rows || [])
@@ -16,7 +32,16 @@ const queryHandler = (req, res, next) => {
 }
 
 app.get('/', (req, res) => {
-  res.send('Welcome to EQ Works 😎')
+
+  console.log(tokens);
+
+  if(isLimit()){
+    res.send('Welcome to EQ Works 😎');
+  }
+
+  else{
+    res.send('Request limit reached!!');
+  }
 })
 
 app.get('/events/hourly', (req, res, next) => {
