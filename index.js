@@ -2,7 +2,6 @@ const { config } = require("dotenv");
 const express = require("express");
 const pg = require("pg");
 const cookieParser = require("cookie-parser");
-const session = require("express-session");
 
 config();
 const app = express();
@@ -12,29 +11,11 @@ app.use(cookieParser());
 // https://www.postgresql.org/docs/9.6/static/libpq-envars.html
 const pool = new pg.Pool();
 
-//tokens used to handle requests
-// let tokens = 2;
-
-//Add one token to use for request after five seconds
-// setInterval(() => {
-//   if (tokens < 5) {
-//     tokens++;
-//   }
-//   console.log(tokens);
-// }, 10000);
-
 /**
- * Returns whether or not we have reached limit
+ * Rate limiter for home route
+ * @param {*} req
+ * @param {*} res
  */
-// const isLimit = () => {
-//   if (tokens > 0) {
-//     tokens--;
-//     return true;
-//   } else {
-//     return false;
-//   }
-// };
-
 const rateLimit = (req, res) => {
   if (!req.cookies.rate) {
     res.cookie("rate", 2, { maxAge: 10000 }).send("Welcome to EQ Works 😎");
@@ -49,8 +30,14 @@ const rateLimit = (req, res) => {
   }
 };
 
+/**
+ * Rate limiter for query routes
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
 const queryHandler = (req, res, next) => {
-  console.log(req.cookies.rate);
+  //Adds cookie to client
   if (!req.cookies.rate) {
     pool
       .query(req.sqlQuery)
@@ -59,6 +46,7 @@ const queryHandler = (req, res, next) => {
       })
       .catch(next);
   } else {
+    //Decrements request count from client
     if (req.cookies.rate > 0) {
       pool
         .query(req.sqlQuery)
@@ -68,6 +56,8 @@ const queryHandler = (req, res, next) => {
             .json(r.rows || []);
         })
         .catch(next);
+
+      //handles request limit reached
     } else {
       res.send("Request limit reached!!");
     }
