@@ -3,13 +3,21 @@ const express = require('express')
 const pg = require('pg')
 
 config();
-
 const app = express()
 // configs come from standard PostgreSQL env vars
 // https://www.postgresql.org/docs/9.6/static/libpq-envars.html
 const pool = new pg.Pool()
 
+//tokens used to handle requests
 let tokens = 2;
+
+//Add one token to use for request after five seconds
+setInterval(() => {
+  if(tokens < 5){
+    tokens ++;
+  }
+  console.log(tokens);
+}, 10000)
 
 /**
  * Returns whether or not we have reached limit
@@ -32,8 +40,6 @@ const queryHandler = (req, res, next) => {
 }
 
 app.get('/', (req, res) => {
-
-  console.log(tokens);
 
   if(isLimit()){
     res.send('Welcome to EQ Works 😎');
