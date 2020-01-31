@@ -41,11 +41,11 @@ const pool = new pg.Pool();
  */
 const rateLimit = (req, res) => {
   if (!req.cookies.rate) {
-    res.cookie("rate", 2, { maxAge: 10000 }).send("Welcome to EQ Works 😎");
+    res.cookie("rate", 10, { maxAge: 10000 }).send("Welcome to EQ Works 😎");
   } else {
     if (req.cookies.rate > 0) {
       res
-        .cookie("rate", req.cookies.rate - 1, { maxAge: 10000 })
+        .cookie("rate", req.cookies.rate - 1, { maxAge: 1000 })
         .send("Welcome to EQ Works 😎");
     } else {
       res.send("Request limit reached!!");
@@ -64,7 +64,7 @@ const queryHandler = (req, res, next) => {
     pool
       .query(req.sqlQuery)
       .then(r => {
-        return res.cookie("rate", 2, { maxAge: 10000 }).json(r.rows || []);
+        return res.cookie("rate", 10, { maxAge: 10000 }).json(r.rows || []);
       })
       .catch(next);
   } else {
@@ -105,11 +105,11 @@ app.get(
   "/events/daily",
   (req, res, next) => {
     req.sqlQuery = `
-    SELECT date, SUM(events) AS events
+    SELECT date, SUM(events) AS events, poi_id
     FROM public.hourly_events
-    GROUP BY date
+    GROUP BY date, poi_id
     ORDER BY date
-    LIMIT 7;
+    LIMIT 32;
   `;
     return next();
   },
@@ -137,7 +137,7 @@ app.get(
     SELECT date,
         SUM(impressions) AS impressions,
         SUM(clicks) AS clicks,
-        SUM(revenue) AS revenue
+        SUM(revenue) AS revenue,
     FROM public.hourly_stats
     GROUP BY date
     ORDER BY date
@@ -154,6 +154,23 @@ app.get(
     req.sqlQuery = `
     SELECT *
     FROM public.poi;
+  `;
+    return next();
+  },
+  queryHandler
+);
+
+app.get(
+  "/events/daily/:poi_id",
+  (req, res, next) => {
+    const poi_id = req.params.poi_id
+    req.sqlQuery = `
+    SELECT date, SUM(events) AS events, poi_id
+    FROM public.hourly_events
+    WHERE poi_id = ${poi_id}
+    GROUP BY date, poi_id
+    ORDER BY date
+    LIMIT 7;
   `;
     return next();
   },
